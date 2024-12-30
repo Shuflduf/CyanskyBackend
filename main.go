@@ -1,8 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"log"
+	"os"
+
 	"github.com/appwrite/sdk-for-go/appwrite"
+	"github.com/appwrite/sdk-for-go/databases"
 	"github.com/appwrite/sdk-for-go/models"
+	"github.com/joho/godotenv"
+	"github.com/savsgio/atreugo"
 )
 
 type Document struct {
@@ -14,15 +21,63 @@ type DocumentList struct {
 	Documents []Document `json:"documents"`
 }
 
+var myDatabases *databases.Databases
+
 func main() {
+	_ = godotenv.Load()
+	SetupDB()
+	SetupServer()
+}
+
+func SetupServer() {
+	config := &atreugo.Config{
+		Host: "localhost",
+		Port: 8000,
+	}
+	server := atreugo.New(config)
+
+	server.Path("GET", "/", func(ctx *atreugo.RequestCtx) error {
+		println("Hello World")
+		return ctx.HTTPResponse(RetrieveDBDocuments())
+	})
+
+	server.Path("POST", "/newacc", func(ctx *atreugo.RequestCtx) error {
+		var data map[string]interface{}
+
+		// Parse the JSON body
+		if err := json.Unmarshal(ctx.PostBody(), &data); err != nil {
+			ctx.Error("Invalid JSON", 400)
+			return err
+		}
+
+		// Process the data (for demonstration, we just log it)
+		log.Printf("Received POST data: %+v\n", data)
+
+		// Send a response
+		return ctx.JSONResponse(map[string]string{
+			"status":  "success",
+			"message": "Data received successfully",
+		})
+	})
+
+	err := server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func SetupDB() {
 	client := appwrite.NewClient(
 		appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
 		appwrite.WithProject("6770875d003cd7a26e8e"),
+		appwrite.WithKey(os.Getenv("ADMIN_SECRET")),
 	)
 
-	databases := appwrite.NewDatabases(client)
+	myDatabases = appwrite.NewDatabases(client)
+}
 
-	response, _ := databases.ListDocuments(
+func RetrieveDBDocuments() string {
+	response, _ := myDatabases.ListDocuments(
 		"67709112001c053f6cdf",
 		"677091380032b5cf769d",
 	)
@@ -30,7 +85,5 @@ func main() {
 	var docs DocumentList
 	response.Decode(&docs)
 
-	for _, doc := range docs.Documents {
-		println(doc.Risk)
-	}
+	return docs.Documents[0].Risk
 }
