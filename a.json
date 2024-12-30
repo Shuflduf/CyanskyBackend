@@ -1,0 +1,14 @@
+{
+  "total": 1,
+  "documents": [
+    {
+      "risk": "RIAN",
+      "$id": "6770919d0022a90a02f5",
+      "$createdAt": "2024-12-29T00:01:39.507+00:00",
+      "$updatedAt": "2024-12-29T00:01:39.507+00:00",
+      "$permissions": [],
+      "$databaseId": "67709112001c053f6cdf",
+      "$collectionId": "677091380032b5cf769d"
+    }
+  ]
+}
