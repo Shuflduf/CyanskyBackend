@@ -8,8 +8,9 @@ import (
 	"github.com/appwrite/sdk-for-go/appwrite"
 	"github.com/appwrite/sdk-for-go/databases"
 	"github.com/appwrite/sdk-for-go/models"
+	"github.com/atreugo/cors"
 	"github.com/joho/godotenv"
-	"github.com/savsgio/atreugo"
+	"github.com/savsgio/atreugo/v11"
 )
 
 type Document struct {
@@ -30,11 +31,17 @@ func main() {
 }
 
 func SetupServer() {
-	config := &atreugo.Config{
-		Host: "localhost",
-		Port: 8000,
+	config := atreugo.Config{
+    Addr: "127.0.0.1:8000",
 	}
 	server := atreugo.New(config)
+
+	cors := cors.New(cors.Config{
+		AllowedHeaders:   []string{"Content-Type", "application/json"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowCredentials: true,
+	})
+  server.UseAfter(cors)
 
 	server.Path("GET", "/", func(ctx *atreugo.RequestCtx) error {
 		println("Hello World")
