@@ -1,16 +1,17 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
+	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/appwrite/sdk-for-go/appwrite"
 	"github.com/appwrite/sdk-for-go/databases"
 	"github.com/appwrite/sdk-for-go/models"
-	"github.com/atreugo/cors"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/savsgio/atreugo/v11"
 )
 
 type Document struct {
@@ -31,46 +32,43 @@ func main() {
 }
 
 func SetupServer() {
-	config := atreugo.Config{
-    Addr: "127.0.0.1:8000",
-	}
-	server := atreugo.New(config)
+	r := gin.Default()
 
-	cors := cors.New(cors.Config{
-		AllowedHeaders:   []string{"Content-Type", "application/json"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowCredentials: true,
+  r.Use(cors.New(cors.Config{
+    AllowOrigins:     []string{"*"},
+    AllowMethods:     []string{"GET", "POST"},
+    AllowHeaders:     []string{"Origin", "Content-Type"},
+    ExposeHeaders:    []string{"Content-Length"},
+    AllowCredentials: true,
+    AllowOriginFunc: func(origin string) bool {
+      return origin == "https://github.com"
+    },
+    MaxAge: 12 * time.Hour,
+  }))
+
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": RetrieveDBDocuments(),
+		})
 	})
-  server.UseAfter(cors)
-
-	server.Path("GET", "/", func(ctx *atreugo.RequestCtx) error {
-		println("Hello World")
-		return ctx.HTTPResponse(RetrieveDBDocuments())
-	})
-
-	server.Path("POST", "/newacc", func(ctx *atreugo.RequestCtx) error {
-		var data map[string]interface{}
-
-		// Parse the JSON body
-		if err := json.Unmarshal(ctx.PostBody(), &data); err != nil {
-			ctx.Error("Invalid JSON", 400)
-			return err
+	r.POST("/newacc", func(c *gin.Context) {
+		var reqBody map[string]any
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid request body",
+			})
+			return
 		}
 
-		// Process the data (for demonstration, we just log it)
-		log.Printf("Received POST data: %+v\n", data)
+		fmt.Println(reqBody)
 
-		// Send a response
-		return ctx.JSONResponse(map[string]string{
-			"status":  "success",
-			"message": "Data received successfully",
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+			"data": reqBody,
 		})
 	})
 
-	err := server.ListenAndServe()
-	if err != nil {
-		panic(err)
-	}
+	r.Run(":8000")
 }
 
 func SetupDB() {
