@@ -1,4 +1,4 @@
-module shuflduf.xyz/CyanskyBackend
+module cyansky
 
 go 1.23.2
 
