@@ -7,6 +7,7 @@ import (
 
 	"github.com/appwrite/sdk-for-go/appwrite"
 	"github.com/appwrite/sdk-for-go/id"
+	// "github.com/appwrite/sdk-for-go/role"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,35 +20,49 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 
+	newClient := appwrite.NewClient(
+		appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
+		appwrite.WithProject(database.ProjectId),
+	)
+
 	// register acc into AUTH
-	newAccount := appwrite.NewAccount(database.AdminClient)
-	result, err := newAccount.Create(
+	newAccount := appwrite.NewAccount(newClient)
+	accountResult, accErr := newAccount.Create(
 		id.Unique(),
 		reqBody["email"].(string),
 		reqBody["password"].(string),
 		database.AccountService.WithCreateName(reqBody["name"].(string)),
 	)
 
-	if err != nil {
+	if accErr != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("%s", err),
+			"error": fmt.Sprintf("Failed to create account: %s", accErr),
 		})
 		return
 	}
+	userId := accountResult.Id
 
 	// register acc into DB
-	_, _ = database.DatabaseService.CreateDocument(
+	result, err := database.DatabaseService.CreateDocument(
 		"cyansky-main",
 		"user-data",
 		id.Unique(),
 		map[string]interface{}{
 			"username": reqBody["name"].(string),
-			"auth-id":  result.Id,
+			"auth-id":  userId,
 		},
+		database.DatabaseService.WithCreateDocumentPermissions([]string{
+			"write(\"user:" + userId + "\")",
+			"read(\"user:" + userId + "\")",
+		}),
 	)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": result,
-	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("Failed to register account into database: %s", err),
+		})
+		return
+	}
 
+	c.JSON(http.StatusOK, result)
 }

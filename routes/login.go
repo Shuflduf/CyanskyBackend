@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/appwrite/sdk-for-go/appwrite"
-	"github.com/appwrite/sdk-for-go/query"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,45 +18,55 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	client := appwrite.NewClient(
+	userClient := appwrite.NewClient(
 		appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
 		appwrite.WithProject(database.ProjectId),
+		// appwrite.WithKey(os.Getenv("ADMIN_SECRET")),
 	)
 
-	accountService := appwrite.NewAccount(client)
+	accountService := appwrite.NewAccount(userClient)
 
-	result, err := accountService.CreateEmailPasswordSession(
+	sessionsResult, err := accountService.CreateEmailPasswordSession(
 		reqBody["email"].(string),
 		reqBody["password"].(string),
 	)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("%v", err),
+			"error": "Couldn't create session: " + fmt.Sprintf("%v", err),
 		})
 		return
 	}
 
-	searchQuery := []string{query.Equal("auth-id", []interface{}{result.UserId})}
+  userData := GetUserData(sessionsResult.UserId)
+	fmt.Println(userData)
+  // username := userData["username"].(string)
+  username := "test"
+
+	c.JSON(http.StatusOK, gin.H{
+		// "message": GetUserData(sessionsResult.),
+    "message": "Logged in as " + username,
+	})
+}
+
+func GetUserData(userId string) map[string]interface{} {
 	documentList, err := database.DatabaseService.ListDocuments(
 		"cyansky-main",
 		"user-data",
-		database.DatabaseService.WithListDocumentsQueries(searchQuery),
 	)
 
 	if err != nil {
-		fmt.Println(err)
+    fmt.Printf("DB: %v", err)
+		return nil
 	}
 
-	var info map[string]any
-  err = documentList.Documents[0].Decode(&info)
+	fmt.Println(documentList.Documents[0])
+	var info []map[string]interface{}
+	err = documentList.Decode(&info)
   if err != nil {
-    fmt.Println(err)
+    fmt.Printf("Decode: %v", err)
+    return nil
   }
-  fmt.Println(documentList.Documents[0])
-  fmt.Println(info)
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": info,
-	})
+	fmt.Println(info)
+	return info[0]
 }
