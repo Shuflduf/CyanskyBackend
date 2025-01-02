@@ -43,7 +43,7 @@ func CreateAccount(c *gin.Context) {
 	userId := accountResult.Id
 
 	// register acc into DB
-	result, err := database.DatabaseService.CreateDocument(
+	_, err := database.DatabaseService.CreateDocument(
 		"cyansky-main",
 		"user-data",
 		id.Unique(),
@@ -64,5 +64,15 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+  email := reqBody["email"].(string)
+  password := reqBody["password"].(string)
+  sessionsResult, err := CreateSession(email, password)
+  if err != nil {
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "error": "Invalid credentials",
+    })
+    return
+  }
+
+	c.JSON(http.StatusOK, sessionsResult)
 }

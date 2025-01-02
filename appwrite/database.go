@@ -1,12 +1,14 @@
 package database
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/appwrite/sdk-for-go/account"
 	"github.com/appwrite/sdk-for-go/appwrite"
 	"github.com/appwrite/sdk-for-go/client"
 	"github.com/appwrite/sdk-for-go/databases"
+	"github.com/appwrite/sdk-for-go/query"
 )
 
 const ProjectId = "6770875d003cd7a26e8e"
@@ -42,3 +44,23 @@ func SetupDB() {
 //   var info interface{}
 //   return documentList.Documents[0].Decode(info)
 // }
+func GetUserData(userId string) map[string]interface{} {
+	documentList, err := DatabaseService.ListDocuments(
+		"cyansky-main",
+		"user-data",
+		DatabaseService.WithListDocumentsQueries([]string{query.Equal("auth-id", userId)}),
+	)
+
+	if err != nil {
+		fmt.Printf("DB: %v", err)
+		return nil
+	}
+
+	var info map[string]interface{}
+	err = documentList.Decode(&info)
+	if err != nil {
+		fmt.Printf("Decode: %v", err)
+		return nil
+	}
+	return info["documents"].([]interface{})[0].(map[string]interface{})
+}
