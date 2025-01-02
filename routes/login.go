@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/appwrite/sdk-for-go/appwrite"
+	"github.com/appwrite/sdk-for-go/query"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,19 +33,17 @@ func Login(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+    // TODO: fix all the http statuses to be more descriptive
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Couldn't create session: " + fmt.Sprintf("%v", err),
 		})
 		return
 	}
 
   userData := GetUserData(sessionsResult.UserId)
-	fmt.Println(userData)
-  // username := userData["username"].(string)
-  username := "test"
+  username := userData["username"].(string)
 
 	c.JSON(http.StatusOK, gin.H{
-		// "message": GetUserData(sessionsResult.),
     "message": "Logged in as " + username,
 	})
 }
@@ -53,6 +52,7 @@ func GetUserData(userId string) map[string]interface{} {
 	documentList, err := database.DatabaseService.ListDocuments(
 		"cyansky-main",
 		"user-data",
+    database.DatabaseService.WithListDocumentsQueries([]string{query.Equal("auth-id", userId)}),
 	)
 
 	if err != nil {
@@ -60,13 +60,11 @@ func GetUserData(userId string) map[string]interface{} {
 		return nil
 	}
 
-	fmt.Println(documentList.Documents[0])
-	var info []map[string]interface{}
+	var info map[string]interface{}
 	err = documentList.Decode(&info)
   if err != nil {
     fmt.Printf("Decode: %v", err)
     return nil
   }
-	fmt.Println(info)
-	return info[0]
+	return info["documents"].([]interface{})[0].(map[string]interface{})
 }

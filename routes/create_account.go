@@ -35,7 +35,7 @@ func CreateAccount(c *gin.Context) {
 	)
 
 	if accErr != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusConflict, gin.H{
 			"error": fmt.Sprintf("Failed to create account: %s", accErr),
 		})
 		return
@@ -58,7 +58,7 @@ func CreateAccount(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusConflict, gin.H{
 			"error": fmt.Sprintf("Failed to register account into database: %s", err),
 		})
 		return

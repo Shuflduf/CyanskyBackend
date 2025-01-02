@@ -31,7 +31,7 @@ func MakePost(c *gin.Context) {
 	)
 
   if err != nil {
-    c.JSON(http.StatusBadRequest, gin.H{
+    c.JSON(http.StatusInternalServerError, gin.H{
       "error": "Failed to create post",
     })
     return
