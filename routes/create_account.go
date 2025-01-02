@@ -20,12 +20,12 @@ func CreateAccount(c *gin.Context) {
 	}
 
 	// register acc into AUTH
-	newAccount := appwrite.NewAccount(database.BaseClient)
+	newAccount := appwrite.NewAccount(database.AdminClient)
 	result, err := newAccount.Create(
 		id.Unique(),
 		reqBody["email"].(string),
 		reqBody["password"].(string),
-		database.AccountManager.WithCreateName(reqBody["name"].(string)),
+		database.AccountService.WithCreateName(reqBody["name"].(string)),
 	)
 
 	if err != nil {
@@ -36,7 +36,7 @@ func CreateAccount(c *gin.Context) {
 	}
 
 	// register acc into DB
-	_, _ = database.DatabaseManager.CreateDocument(
+	_, _ = database.DatabaseService.CreateDocument(
 		"cyansky-main",
 		"user-data",
 		id.Unique(),

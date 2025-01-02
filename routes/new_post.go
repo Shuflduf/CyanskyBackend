@@ -20,7 +20,7 @@ func MakePost(c *gin.Context) {
 	content := reqBody["content"].(string)
 	author := reqBody["author"].(string)
 
-	_, err := database.DatabaseManager.CreateDocument(
+	_, err := database.DatabaseService.CreateDocument(
 		"cyansky-main",
 		"posts",
 		id.Unique(),

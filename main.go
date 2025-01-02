@@ -49,6 +49,7 @@ func SetupServer() {
 
 	r.POST("/createpost", routes.MakePost)
   r.POST("/createaccount", routes.CreateAccount)
+  r.POST("/login", routes.Login)
 
 	r.Run(":8000")
 }
