@@ -1,9 +1,12 @@
 package database
 
+import "fmt"
+
 func GetSecret(sessionId string) string {
-  result, err := AccountService.GetSession(sessionId)
-  if err != nil {
-    return ""
-  }
-  return result.Secret
+	RefreshServices()
+	result, err := AccountService.GetSession(sessionId)
+	if err != nil {
+    return fmt.Sprintf("Error: %v", err)
+	}
+	return result.Secret
 }

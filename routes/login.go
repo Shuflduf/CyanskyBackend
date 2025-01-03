@@ -29,12 +29,9 @@ func Login(c *gin.Context) {
 }
 
 func CreateSession(email, password string) (map[string]interface{}, error) {
-	userClient := appwrite.NewClient(
-		appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
-		appwrite.WithProject(database.ProjectId),
-	)
+  database.RefreshServices()
 
-	accountService := appwrite.NewAccount(userClient)
+	accountService := appwrite.NewAccount(database.AdminClient)
 
 	sessionsResult, err := accountService.CreateEmailPasswordSession(
 		email,
@@ -46,7 +43,7 @@ func CreateSession(email, password string) (map[string]interface{}, error) {
 	}
 
 	userData := database.GetUserData(sessionsResult.UserId)
-  userData["sessionId"] = sessionsResult.Id
+  userData["token"] = sessionsResult.Secret
 
   return userData, nil
 }

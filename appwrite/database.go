@@ -28,23 +28,18 @@ func SetupDB() {
   AccountService = appwrite.NewAccount(AdminClient)
 }
 
-// func GetAccountInfo(authId string) interface{} {
-// 	searchQuery := []string{query.Equal("auth-id", []interface{}{authId})}
-// 	documentList, err := DatabaseService.ListDocuments(
-// 		"cyansky-main",
-// 		"user-data",
-// 		DatabaseService.WithListDocumentsQueries(searchQuery),
-// 	)
-//
-//   if err != nil {
-//     fmt.Println(err)
-//     return nil
-//   }
-//
-//   var info interface{}
-//   return documentList.Documents[0].Decode(info)
-// }
+func RefreshServices() {
+  AdminClient = appwrite.NewClient(
+    appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
+    appwrite.WithProject(ProjectId),
+    appwrite.WithKey(os.Getenv("ADMIN_SECRET")),
+  )
+  DatabaseService = appwrite.NewDatabases(AdminClient)
+  AccountService = appwrite.NewAccount(AdminClient)
+}
+
 func GetUserData(userId string) map[string]interface{} {
+  RefreshServices()
 	documentList, err := DatabaseService.ListDocuments(
 		"cyansky-main",
 		"user-data",

@@ -6,21 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/appwrite/sdk-for-go/models"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
-
-type Document struct {
-	Risk string `json:"risk"`
-}
-
-type DocumentList struct {
-	*models.DocumentList
-	Documents []Document `json:"documents"`
-}
-
 
 func main() {
 	_ = godotenv.Load()
@@ -32,6 +21,7 @@ func SetupServer() {
 	r := gin.Default()
 	_ = r.SetTrustedProxies([]string{"192.168.1.0/24"})
 
+  // i hate cors
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST"},
@@ -50,19 +40,7 @@ func SetupServer() {
 	r.POST("/createpost", routes.MakePost)
   r.POST("/createaccount", routes.CreateAccount)
   r.POST("/login", routes.Login)
+  r.POST("/follow", routes.Follow)
 
 	r.Run(":8000")
 }
-
-
-// func RetrieveDBDocuments() string {
-// 	response, _ := databaseManager.ListDocuments(
-// 		"67709112001c053f6cdf",
-// 		"677091380032b5cf769d",
-// 	)
-//
-// 	var docs DocumentList
-// 	response.Decode(&docs)
-//
-// 	return docs.Documents[0].Risk
-// }

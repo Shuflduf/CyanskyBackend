@@ -20,6 +20,8 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 
+  database.RefreshServices()
+
 	newClient := appwrite.NewClient(
 		appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
 		appwrite.WithProject(database.ProjectId),
@@ -64,6 +66,7 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 
+  // create session
   email := reqBody["email"].(string)
   password := reqBody["password"].(string)
   sessionsResult, err := CreateSession(email, password)
