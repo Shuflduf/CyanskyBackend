@@ -20,8 +20,8 @@ func GetPosts(c *gin.Context) {
 
 	database.RefreshServices()
 	queries := []string{
-		query.OrderDesc("$id"),
-		query.Limit(25),
+		query.OrderDesc("$createdAt"),
+		query.Limit(10),
 	}
 
 	pointerId, isContinue := reqBody["last_post_id"].(string)
