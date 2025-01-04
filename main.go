@@ -41,6 +41,7 @@ func SetupServer() {
   r.POST("/createaccount", routes.CreateAccount)
   r.POST("/login", routes.Login)
   r.POST("/follow", routes.Follow)
+  r.GET("/getposts", routes.GetPosts)
 
 	r.Run(":8000")
 }
