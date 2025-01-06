@@ -44,6 +44,7 @@ func SetupServer() {
   r.POST("/likes", routes.Likes)
   // this isnt actually a post request but i dont care
   r.POST("/getposts", routes.GetPosts)
+  r.POST("/getuserdata", routes.GetUserData)
 
 	r.Run(":8000")
 }

@@ -15,5 +15,5 @@ func Likes(c *gin.Context) {
 		return
 	}
 
-	isLike := reqBody["is_like"].(bool)
+	// isLike := reqBody["is_like"].(bool)
 }

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"cyansky/appwrite"
+	"fmt"
 	"net/http"
 
 	"github.com/appwrite/sdk-for-go/appwrite"
@@ -12,7 +13,7 @@ func Login(c *gin.Context) {
 	var reqBody map[string]any
 	if err := c.ShouldBindJSON(&reqBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
+      "error": fmt.Sprintf("Invalid request body: %s", err),
 		})
 		return
 	}
@@ -20,7 +21,7 @@ func Login(c *gin.Context) {
 	result, err := CreateSession(reqBody["email"].(string), reqBody["password"].(string))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid credentials",
+      "error": fmt.Sprintf("Error creating session: %s", err),
 		})
 		return
 	}
