@@ -53,14 +53,15 @@ func GetUserDataId(c *gin.Context) {
 			return
 		}
 
-		err = documentList.Decode(&info)
+    var documentListData map[string]interface{}
+		err = documentList.Decode(&documentListData)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": fmt.Sprintf("Error decoding document: %s", err),
 			})
 			return
 		}
-		info = info["documents"].([]interface)[0]
+    info = documentListData["documents"].([]interface{})[0].(map[string]interface{})
 	}
 
 	c.JSON(http.StatusOK, info)
