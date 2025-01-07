@@ -53,6 +53,7 @@ func GetUserData(userId string) map[string]interface{} {
 
 	var info map[string]interface{}
 	err = documentList.Decode(&info)
+	fmt.Printf("Info: %v", info)
 	if err != nil {
 		fmt.Printf("Decode: %v", err)
 		return nil
