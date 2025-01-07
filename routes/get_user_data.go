@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/appwrite/sdk-for-go/query"
 	"github.com/gin-gonic/gin"
 )
 
-func GetUserData(c *gin.Context) {
+func GetUserDataId(c *gin.Context) {
 	var reqBody map[string]any
 	if err := c.ShouldBindJSON(&reqBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -17,29 +18,50 @@ func GetUserData(c *gin.Context) {
 		return
 	}
 
-	database.RefreshServices()
-	documentList, err := database.DatabaseService.GetDocument(
-		"cyansky-main",
-		"user-data",
-		reqBody["user_id"].(string),
-	)
+	username, hasUsername := reqBody["username"].(string)
+	userId, hasUserId := reqBody["user_id"].(string)
 
-	if err != nil {
-		fmt.Printf("DB: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("Error getting document list: %s", err),
-		})
-		return
-	}
+	database.RefreshServices()
 
 	var info map[string]interface{}
-	err = documentList.Decode(&info)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("Error decoding document list: %s", err),
-		})
-		return
+	if !hasUsername && hasUserId {
+		var err error
+		document, err := database.DatabaseService.GetDocument(
+			"cyansky-main",
+			"user-data",
+			userId,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Error getting document list: %s", err),
+			})
+			return
+		}
+		err = document.Decode(&info)
+	} else {
+		documentList, err := database.DatabaseService.ListDocuments(
+			"cyansky-main",
+			"user-data",
+			database.DatabaseService.WithListDocumentsQueries([]string{query.Equal("username", username)}),
+		)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Error getting document list: %s", err),
+			})
+			return
+		}
+
+		err = documentList.Decode(&info)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Error decoding document: %s", err),
+			})
+			return
+		}
+		info = info["documents"].([]interface)[0]
 	}
-	// output := info["documents"].([]interface{})[0].(map[string]interface{})
+
 	c.JSON(http.StatusOK, info)
 }
