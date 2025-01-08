@@ -29,6 +29,11 @@ func GetPosts(c *gin.Context) {
 		queries = append(queries, query.CursorAfter(pointerId))
 	}
 
+  userId, isUser := reqBody["user_id"].(string)
+  if isUser && userId != "" {
+    // queries = append(queries, query.Equal()("$userId", "=", userId))
+  }
+
 	documentList, err := database.DatabaseService.ListDocuments(
 		"cyansky-main",
 		"posts",
@@ -42,7 +47,6 @@ func GetPosts(c *gin.Context) {
     return
   }
 
-	var postList map[string]interface{}
 	var decodedDocuments map[string]interface{}
 	err = documentList.Decode(&decodedDocuments)
 	if err != nil {
@@ -50,36 +54,5 @@ func GetPosts(c *gin.Context) {
 			"error": fmt.Sprintf("Failed to decode documents: %s", err),
 		})
 	}
-
-  decodedDocumentList := decodedDocuments["documents"].([]interface{})
-  for _, document := range decodedDocumentList {
-    database.RefreshServices()
-    documentId := document.(map[string]interface{})["$id"].(string)
-    DocumentData, err := database.DatabaseService.GetDocument(
-      "cyansky-main",
-      "posts",
-      documentId,
-      )
-    if err != nil {
-      c.JSON(http.StatusInternalServerError, gin.H{
-        "error": fmt.Sprintf("Internal server error: %v", err),
-      })
-      return
-    }
-    var decodedDocumentData map[string]interface{}
-    err = DocumentData.Decode(&decodedDocumentData)
-    if err != nil {
-      c.JSON(http.StatusInternalServerError, gin.H{
-        "error": fmt.Sprintf("Failed to decode document data: %s", err),
-      })
-    } 
-    if postList == nil {
-      postList = make(map[string]interface{})
-      postList["posts"] = []interface{}{}
-    }
-    postList["posts"] = append(postList["posts"].([]interface{}), decodedDocumentData)
-
-  }
-
-	c.JSON(http.StatusOK, postList)
+  c.JSON(http.StatusOK, decodedDocuments)
 }
