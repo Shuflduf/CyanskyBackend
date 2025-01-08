@@ -7,6 +7,8 @@ import (
 
 	"github.com/appwrite/sdk-for-go/appwrite"
 	"github.com/appwrite/sdk-for-go/id"
+	"github.com/appwrite/sdk-for-go/query"
+
 	// "github.com/appwrite/sdk-for-go/role"
 	"github.com/gin-gonic/gin"
 )
@@ -20,8 +22,42 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 
-  database.RefreshServices()
+	username := reqBody["username"].(string)
+	email := reqBody["email"].(string)
+	password := reqBody["password"].(string)
+	displayName := reqBody["display_name"].(string)
 
+	// check if username is valid
+	if !database.VerifyUsername(username) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid username, only lowercase letters and numbers are allowed",
+		})
+		return
+	}
+
+	// check if username already exists
+	database.RefreshServices()
+	usersWithSameName, err := database.DatabaseService.ListDocuments(
+		"cyansky-main",
+		"user-data",
+		database.DatabaseService.WithListDocumentsQueries([]string{
+			query.Equal("username", username),
+		}),
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("Failed to check if username exists: %s", err),
+		})
+		return
+	}
+	if usersWithSameName.Total > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"error": "Username already exists",
+		})
+		return
+	}
+
+	database.RefreshServices()
 	newClient := appwrite.NewClient(
 		appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
 		appwrite.WithProject(database.ProjectId),
@@ -31,9 +67,9 @@ func CreateAccount(c *gin.Context) {
 	newAccount := appwrite.NewAccount(newClient)
 	accountResult, accErr := newAccount.Create(
 		id.Unique(),
-		reqBody["email"].(string),
-		reqBody["password"].(string),
-		database.AccountService.WithCreateName(reqBody["name"].(string)),
+		email,
+		password,
+		database.AccountService.WithCreateName(username),
 	)
 
 	if accErr != nil {
@@ -45,12 +81,13 @@ func CreateAccount(c *gin.Context) {
 	userId := accountResult.Id
 
 	// register acc into DB
-	_, err := database.DatabaseService.CreateDocument(
+	_, err = database.DatabaseService.CreateDocument(
 		"cyansky-main",
 		"user-data",
 		id.Unique(),
 		map[string]interface{}{
-			"username": reqBody["name"].(string),
+			"username": username,
+			"display-name": displayName,
 			"auth-id":  userId,
 		},
 		database.DatabaseService.WithCreateDocumentPermissions([]string{
@@ -66,16 +103,14 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 
-  // create session
-  email := reqBody["email"].(string)
-  password := reqBody["password"].(string)
-  sessionsResult, err := CreateSession(email, password)
-  if err != nil {
-    c.JSON(http.StatusInternalServerError, gin.H{
-      "error": "Invalid credentials",
-    })
-    return
-  }
+	// create session
+	sessionsResult, err := CreateSession(email, password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Invalid credentials",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, sessionsResult)
 }

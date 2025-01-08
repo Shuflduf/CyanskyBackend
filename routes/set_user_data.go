@@ -19,9 +19,13 @@ func SetUserData(c *gin.Context) {
 	}
 
 	description, descriptionOk := reqBody["description"].(string)
+	displayName, displayNameOk := reqBody["display_name"].(string)
 	updateData := map[string]interface{}{}
 	if descriptionOk {
 		updateData["description"] = description
+	}
+	if displayNameOk {
+		updateData["display-name"] = displayName
 	}
 
 	authorClient := appwrite.NewClient(
