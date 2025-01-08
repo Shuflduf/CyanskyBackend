@@ -45,6 +45,7 @@ func SetupServer() {
   // this isnt actually a post request but i dont care
   r.POST("/getposts", routes.GetPosts)
   r.POST("/getuserdata", routes.GetUserDataId)
+	r.POST("/setuserdata", routes.SetUserData)
 
 	r.Run(":8000")
 }
