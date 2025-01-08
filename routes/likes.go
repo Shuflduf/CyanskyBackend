@@ -138,10 +138,16 @@ func UpdateUserLiked(toChange, field, userId string) {
 		fmt.Println(err)
 		return
 	}
-	likedPosts := userData[field].([]interface{})
-	dislikedPosts := userData["disliked-posts"].([]interface{})
+	likedPosts := convertToStringSlice(userData[field].([]interface{}))
+	dislikedPosts := convertToStringSlice(userData["disliked-posts"].([]interface{}))
 
 	// if toChange is in field, remove it 
+	if slices.Contains(likedPosts, toChange) {
+		likedPosts = slices.DeleteFunc(likedPosts, func(s string) bool {
+			return s == toChange 
+		})
+	}
+
 
 	// if toChange is in the opposite field, remove it and add it to field 
 
