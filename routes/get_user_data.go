@@ -20,6 +20,7 @@ func GetUserDataId(c *gin.Context) {
 
 	username, hasUsername := reqBody["username"].(string)
 	userId, hasUserId := reqBody["user_id"].(string)
+	noPost, hasNoPostTag := reqBody["no_post"].(bool)
 
 	database.RefreshServices()
 
@@ -62,6 +63,10 @@ func GetUserDataId(c *gin.Context) {
 			return
 		}
     info = documentListData["documents"].([]interface{})[0].(map[string]interface{})
+	}
+
+	if hasNoPostTag && noPost {
+		info["posts"] = nil
 	}
 
 	c.JSON(http.StatusOK, info)
