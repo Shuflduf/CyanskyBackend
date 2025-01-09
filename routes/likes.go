@@ -22,6 +22,12 @@ func Likes(c *gin.Context) {
 	database.RefreshServices()
 
 	isLike := reqBody["is_like"].(bool)
+	var likeValue int
+	if isLike {
+		likeValue = 1
+	} else {
+		likeValue = -1
+	}
 	postId := reqBody["post_id"].(string)
 	authorClient := appwrite.NewClient(
 		appwrite.WithEndpoint("https://cloud.appwrite.io/v1"),
@@ -51,107 +57,67 @@ func Likes(c *gin.Context) {
 		return
 	}
 
-	// unlike if already liked
-	if slices.Contains(likedPosts, postId) && isLike {
-		newLikedPosts := slices.DeleteFunc(likedPosts, func(s string) bool {
-			return s == postId
+	result, err := UpdateUserLiked(postId, authorData["$id"].(string), likeValue)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("Failed to update user data: %s", err),
 		})
-		UpdatePostLikes(postId, "likes", -1)
-		_, err := database.DatabaseService.UpdateDocument(
-			"cyansky-main",
-			"user-data",
-			authorData["$id"].(string),
-			database.DatabaseService.WithUpdateDocumentData(map[string]interface{}{
-				"liked-posts": newLikedPosts,
-			}),
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("Failed to update user data: %s", err),
-			})
-			return
-		}
-
-		// undislike if already disliked
-	} else if slices.Contains(dislikedPosts, postId) && !isLike {
-		newDislikedPosts := slices.DeleteFunc(dislikedPosts, func(s string) bool {
-			return s == postId
-		})
-		UpdatePostLikes(postId, "dislikes", -1)
-		_, err := database.DatabaseService.UpdateDocument(
-			"cyansky-main",
-			"user-data",
-			authorData["$id"].(string),
-			database.DatabaseService.WithUpdateDocumentData(map[string]interface{}{
-				"disliked-posts": newDislikedPosts,
-			}),
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("Failed to update user data: %s", err),
-			})
-			return
-		}
-
-		// like or dislike if not already liked or disliked
-	} else if !slices.Contains(likedPosts, postId) && !slices.Contains(dislikedPosts, postId) {
-		if isLike {
-			likedPosts = append(likedPosts, postId)
-			UpdatePostLikes(postId, "likes", 1)
-		} else {
-			dislikedPosts = append(dislikedPosts, postId)
-			UpdatePostLikes(postId, "dislikes", 1)
-		}
-		_, err := database.DatabaseService.UpdateDocument(
-			"cyansky-main",
-			"user-data",
-			authorData["$id"].(string),
-			database.DatabaseService.WithUpdateDocumentData(map[string]interface{}{
-				"liked-posts":    likedPosts,
-				"disliked-posts": dislikedPosts,
-			}),
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("Failed to update user data: %s", err),
-			})
-			return
-		}
-
-		// like if already disliked
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"liked_posts": likedPosts,
-	})
+	c.JSON(http.StatusOK, result)
 }
 
-func UpdateUserLiked(toChange, field, userId string) {
+func UpdateUserLiked(postId, userId string, likeValue int) (map[string]interface{}, error) {
 	user, err := database.DatabaseService.GetDocument("cyansky-main", "user-data", userId)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, err
 	}
 	var userData map[string]interface{}
 	err = user.Decode(&userData)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, err
 	}
-	likedPosts := convertToStringSlice(userData[field].([]interface{}))
+	likedPosts := convertToStringSlice(userData["liked-posts"].([]interface{}))
 	dislikedPosts := convertToStringSlice(userData["disliked-posts"].([]interface{}))
 
-	// if toChange is in field, remove it 
-	if slices.Contains(likedPosts, toChange) {
-		likedPosts = slices.DeleteFunc(likedPosts, func(s string) bool {
-			return s == toChange 
-		})
+	// coudlve been a function
+	removePost := func(slice *[]string, postId string) {
+		if slices.Contains(*slice, postId) {
+			*slice = slices.DeleteFunc(*slice, func(s string) bool {
+				return s == postId
+			})
+		}
 	}
 
-
-	// if toChange is in the opposite field, remove it and add it to field 
-
-	// if toChange is not in either field, add it to field
+	if likeValue == 1 {
+		if slices.Contains(likedPosts, postId) {
+			removePost(&likedPosts, postId)
+			UpdatePostLikes(postId, "likes", -1)
+		} else {
+			removePost(&dislikedPosts, postId)
+			UpdatePostLikes(postId, "dislikes", -1)
+			if !slices.Contains(likedPosts, postId) {
+				likedPosts = append(likedPosts, postId)
+				UpdatePostLikes(postId, "likes", 1)
+			}
+		}
+	} else if likeValue == -1 {
+		if slices.Contains(dislikedPosts, postId) {
+			removePost(&dislikedPosts, postId)
+			UpdatePostLikes(postId, "dislikes", -1)
+		} else {
+			removePost(&likedPosts, postId)
+			UpdatePostLikes(postId, "likes", -1)
+			if !slices.Contains(dislikedPosts, postId) {
+				dislikedPosts = append(dislikedPosts, postId)
+				UpdatePostLikes(postId, "dislikes", 1)
+			}
+		}
+	}
 
 	_, err = database.DatabaseService.UpdateDocument(
 		"cyansky-main",
@@ -164,27 +130,44 @@ func UpdateUserLiked(toChange, field, userId string) {
 	)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, err
 	}
+
+	return map[string]interface{}{
+		"liked_posts":    likedPosts,
+		"disliked_posts": dislikedPosts,
+		"new_likes":      GetLikes(false, postId),
+    "new_dislikes":   GetLikes(true, postId),
+	}, nil
 }
 
-func UpdatePostLikes(postId string, field string, change int) {
+func GetLikes(isDislike bool, postId string) int {
 	database.RefreshServices()
 	post, err := database.DatabaseService.GetDocument("cyansky-main", "posts", postId)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return 0
 	}
 	var postData map[string]interface{}
 	err = post.Decode(&postData)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return 0
 	}
-	likes := postData[field].(float64)
+	if isDislike {
+		return int(postData["dislikes"].(float64))
+	} else {
+		return int(postData["likes"].(float64))
+	}
+}
+
+func UpdatePostLikes(postId string, field string, change int) int {
+	database.RefreshServices()
+
+	likes := float64(GetLikes(field == "dislikes", postId))
 	likes += float64(change)
-	postData[field] = likes
-	_, err = database.DatabaseService.UpdateDocument(
+	// postData[field] = likes
+  _, err := database.DatabaseService.UpdateDocument(
 		"cyansky-main",
 		"posts",
 		postId,
@@ -194,8 +177,10 @@ func UpdatePostLikes(postId string, field string, change int) {
 	)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return 0
 	}
+
+	return int(likes)
 }
 
 func convertToStringSlice(input []interface{}) []string {
