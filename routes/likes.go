@@ -38,7 +38,7 @@ func Likes(c *gin.Context) {
 	accountData, accErr := service.Get()
 	if accErr != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get account data",
+      "error": fmt.Sprintf("Failed to get account data: %s", accErr),
 		})
 		return
 	}
