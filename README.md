@@ -1,4 +1,4 @@
-# [Frontend Repository](https://github.com/Shuflduf/Cyansky)
+# [Link To Frontend Repository](https://github.com/Shuflduf/Cyansky)
 
 # Cyansky Backend
 *Free and open source social media app*
@@ -7,6 +7,5 @@
 > This app is unfinished and will continue to get development updates, and will soon get proper hosting.
 
 # Cloning
-1. Clone this repository
-2. Download all Go module by running `go mod tidy` in the backend directory
-3. Run the backend with `go run .`
+i dont think you can clone this everything is reliant on having an api key to do anything,
+you can still try though, its probably better to just open an issue
