@@ -93,31 +93,32 @@ func UpdateUserLiked(postId, userId string, likeValue int) (map[string]interface
 		}
 	}
 
+  // if i want to LIKE
 	if likeValue == 1 {
-		if slices.Contains(likedPosts, postId) {
-			removePost(&likedPosts, postId)
-			UpdatePostLikes(postId, "likes", -1)
-		} else {
-			removePost(&dislikedPosts, postId)
-			UpdatePostLikes(postId, "dislikes", -1)
-			if !slices.Contains(likedPosts, postId) {
-				likedPosts = append(likedPosts, postId)
-				UpdatePostLikes(postId, "likes", 1)
-			}
-		}
-	} else if likeValue == -1 {
-		if slices.Contains(dislikedPosts, postId) {
-			removePost(&dislikedPosts, postId)
-			UpdatePostLikes(postId, "dislikes", -1)
-		} else {
-			removePost(&likedPosts, postId)
-			UpdatePostLikes(postId, "likes", -1)
-			if !slices.Contains(dislikedPosts, postId) {
-				dislikedPosts = append(dislikedPosts, postId)
-				UpdatePostLikes(postId, "dislikes", 1)
-			}
-		}
-	}
+    // remove DISLIKE
+    if slices.Contains(dislikedPosts, postId) {
+      removePost(&dislikedPosts, postId)
+    }
+    // add LIKE
+    if !slices.Contains(likedPosts, postId) {
+      likedPosts = append(likedPosts, postId)
+    } else {
+      // if already LIKED, remove LIKE
+      removePost(&likedPosts, postId)
+    }
+  } else if likeValue == -1 {
+    // remove LIKE 
+    if slices.Contains(likedPosts, postId) {
+      removePost(&likedPosts, postId)
+    }
+    // add DISLIKE 
+    if !slices.Contains(dislikedPosts, postId) {
+      dislikedPosts = append(dislikedPosts, postId)
+    } else {
+      // if already DISLIKED, remove DISLIKE 
+      removePost(&dislikedPosts, postId)
+    }
+  }
 
 	_, err = database.DatabaseService.UpdateDocument(
 		"cyansky-main",
@@ -137,7 +138,7 @@ func UpdateUserLiked(postId, userId string, likeValue int) (map[string]interface
 		"liked_posts":    likedPosts,
 		"disliked_posts": dislikedPosts,
 		"new_likes":      GetLikes(false, postId),
-    "new_dislikes":   GetLikes(true, postId),
+		"new_dislikes":   GetLikes(true, postId),
 	}, nil
 }
 
@@ -167,7 +168,7 @@ func UpdatePostLikes(postId string, field string, change int) int {
 	likes := float64(GetLikes(field == "dislikes", postId))
 	likes += float64(change)
 	// postData[field] = likes
-  _, err := database.DatabaseService.UpdateDocument(
+	_, err := database.DatabaseService.UpdateDocument(
 		"cyansky-main",
 		"posts",
 		postId,
