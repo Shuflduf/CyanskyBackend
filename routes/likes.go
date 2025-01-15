@@ -83,7 +83,6 @@ func UpdateUserLiked(postId, userId string, likeValue int) (map[string]interface
 	}
 	likedPosts := convertToStringSlice(userData["liked-posts"].([]interface{}))
 	dislikedPosts := convertToStringSlice(userData["disliked-posts"].([]interface{}))
-  fmt.Println("Before:", likedPosts, dislikedPosts)
 
 	// coudlve been a function
 	removePost := func(slice *[]string, postId string) {
@@ -126,8 +125,6 @@ func UpdateUserLiked(postId, userId string, likeValue int) (map[string]interface
       UpdatePostLikes(postId, "dislikes", -1)
     }
   }
-
-  fmt.Println("After:", likedPosts, dislikedPosts)
 
 	_, err = database.DatabaseService.UpdateDocument(
 		"cyansky-main",
