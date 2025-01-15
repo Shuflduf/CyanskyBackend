@@ -99,25 +99,31 @@ func UpdateUserLiked(postId, userId string, likeValue int) (map[string]interface
     // remove DISLIKE
     if slices.Contains(dislikedPosts, postId) {
       removePost(&dislikedPosts, postId)
+      UpdatePostLikes(postId, "dislikes", -1)
     }
     // add LIKE
     if !slices.Contains(likedPosts, postId) {
       likedPosts = append(likedPosts, postId)
+      UpdatePostLikes(postId, "likes", 1)
     } else {
       // if already LIKED, remove LIKE
       removePost(&likedPosts, postId)
+      UpdatePostLikes(postId, "likes", -1)
     }
   } else if likeValue == -1 {
     // remove LIKE 
     if slices.Contains(likedPosts, postId) {
       removePost(&likedPosts, postId)
+      UpdatePostLikes(postId, "likes", -1)
     }
     // add DISLIKE 
     if !slices.Contains(dislikedPosts, postId) {
       dislikedPosts = append(dislikedPosts, postId)
+      UpdatePostLikes(postId, "dislikes", 1)
     } else {
       // if already DISLIKED, remove DISLIKE 
       removePost(&dislikedPosts, postId)
+      UpdatePostLikes(postId, "dislikes", -1)
     }
   }
 
